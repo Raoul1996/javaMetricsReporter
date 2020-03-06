@@ -2,25 +2,17 @@ package metrics;
 
 import java.util.*;
 
-public class EmailReporter {
+public class EmailReporter implements StatViewer {
     private static final Long DAY_HOURS_IN_SECONDS = 86400L;
+
     private MetricsStorage metricsStorage;
-    private EmailSender emailSender;
-    private List<String> toAddresses = new ArrayList<>();
-
-    public EmailReporter(MetricsStorage metricsStorage) {
-        this(metricsStorage, new EmailSender());
-    }
-
-    public EmailReporter(MetricsStorage metricsStorage, EmailSender emailSender) {
+    private Aggregator aggregator;
+    private StatViewer viewer;
+    public EmailReporter(MetricsStorage metricsStorage,Aggregator aggregator,StatViewer viewer){
         this.metricsStorage = metricsStorage;
-        this.emailSender = emailSender;
+        this.aggregator =aggregator;
+        this.viewer =viewer;
     }
-
-    public void addToAddress(String address) {
-        toAddresses.add(address);
-    }
-
     public void statDailyReport() {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DATE, 1);
@@ -37,16 +29,15 @@ public class EmailReporter {
                 long endTimeInMills = System.currentTimeMillis();
                 long startTimeInMills = endTimeInMills - durationInMills;
                 Map<String, List<RequestInfo>> requestInfos = metricsStorage.getRequestInfos(startTimeInMills, endTimeInMills);
-                Map<String, RequestStat> stats = new HashMap<>();
-                for (Map.Entry<String, List<RequestInfo>> entry : requestInfos.entrySet()) {
-                    String apiName = entry.getKey();
-                    List<RequestInfo> requestInfoPerApi = entry.getValue();
-                    RequestStat requestStat = Aggregator.aggregate(requestInfoPerApi, durationInMills);
-                    stats.put(apiName, requestStat);
-                }
-                //TODO: format to Html and send mail
+                Map<String, RequestStat> requestStats = aggregator.aggregate(requestInfos, durationInMills);
+                viewer.output(requestStats, startTimeInMills, endTimeInMills);
             }
         }, firstTime, DAY_HOURS_IN_SECONDS * 1000);
+    }
+
+    @Override
+    public void output(Map<String, RequestStat> requestStats, long startTimeInMills, long endTimeInMills) {
+
     }
 }
 

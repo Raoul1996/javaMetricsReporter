@@ -1,55 +1,96 @@
 package metrics;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class Aggregator {
-    public static RequestStat aggregate(List<RequestInfo> requestInfos, long durationInMillis) {
-        double maxRespTime = Double.MIN_VALUE;
-        double minRespTime = Double.MAX_VALUE;
-        double avgRespTime = -1;
-        double p99RespTime = -1;
-        double p999RespTime = -1;
-        double sumRespTime = 0;
-        long count = 0;
+    public Map<String, RequestStat> aggregate(Map<String, List<RequestInfo>> requestInfos, long durationInMillis) {
+        Map<String, RequestStat> requestStatStats = new HashMap<>();
+        for (Map.Entry<String, List<RequestInfo>> entry : requestInfos.entrySet()) {
+            String apiName = entry.getKey();
+            List<RequestInfo> requestInfosPerApi = entry.getValue();
+
+            RequestStat requestStat = doAggregate(requestInfosPerApi, durationInMillis);
+            requestStatStats.put(apiName, requestStat);
+        }
+        return requestStatStats;
+    }
+
+    private RequestStat doAggregate(List<RequestInfo> requestInfos, long durationInMillis) {
+        List<Double> respTimes = new ArrayList<>();
         for (RequestInfo requestInfo : requestInfos) {
-            ++count;
-            double respTime = requestInfo.getResponseTime();
-            if (maxRespTime < respTime) {
-                maxRespTime = respTime;
-            }
-            if (minRespTime > respTime) {
-                minRespTime = respTime;
-            }
-            sumRespTime += respTime;
+            double requestTime = requestInfo.getResponseTime();
+            respTimes.add(requestTime);
         }
-        if (count != 0) {
-            avgRespTime = sumRespTime / count;
-        }
-        long tps = count / durationInMillis * 1000;
-        Collections.sort(requestInfos, new Comparator<RequestInfo>() {
+        RequestStat reqStats = new RequestStat();
+        reqStats.setMaxResponseTime(max(respTimes));
+        reqStats.setMinResponseTime(min(respTimes));
+        reqStats.setAvgResponseTime(avg(respTimes));
+        reqStats.setP999ResponseTime(percentile999(respTimes));
+        reqStats.setP99ResponseTime(percentile99(respTimes));
+        reqStats.setCount(respTimes.size());
+        reqStats.setTps((long) tps(respTimes.size(), durationInMillis / 1000));
+        return reqStats;
+    }
+
+    private double tps(double respTimes, long durationInSecond) {
+        return respTimes / durationInSecond;
+    }
+
+    private double percentile999(List<Double> respTimes) {
+        return percentile(respTimes, 0.999);
+    }
+
+    private double percentile99(List<Double> respTimes) {
+        return percentile(respTimes, 0.99);
+    }
+
+    private double percentile(List<Double> respTimes, double v) {
+        Collections.sort(respTimes, new Comparator<Double>() {
             @Override
-            public int compare(RequestInfo o1, RequestInfo o2) {
-                double diff = o1.getResponseTime() - o2.getResponseTime();
+            public int compare(Double o1, Double o2) {
+                double diff = o1 - o2;
                 return Double.compare(diff, 0.0);
             }
         });
-        int idx999 = (int)(count*0.999);
-        int idx99 = (int)(count*0.99);
-        if (count !=0){
-            p999RespTime = requestInfos.get(idx999).getResponseTime();
-            p99RespTime = requestInfos.get(idx99).getResponseTime();
+        int idx = (int) (respTimes.size() * v);
+        if (respTimes.size() != 0) {
+            return respTimes.get(idx);
+        } else {
+            return 0;
         }
-        RequestStat reqStats = new RequestStat();
-        reqStats.setMaxResponseTime(maxRespTime);
-        reqStats.setMinResponseTime(minRespTime);
-        reqStats.setAvgResponseTime(avgRespTime);
-        reqStats.setP999ResponseTime(p999RespTime);
-        reqStats.setP99ResponseTime(p99RespTime);
-        reqStats.setCount(count);
-        reqStats.setTps(tps);
-        return reqStats;
+    }
+
+    private double min(List<Double> respTimes) {
+        double minRespTime = Double.MAX_VALUE;
+        for (double respTime : respTimes) {
+            if (minRespTime > respTime) {
+                minRespTime = respTime;
+            }
+        }
+        return minRespTime;
+    }
+
+    private double sum(List<Double> respTimes) {
+        double sumRespTime = 0;
+        for (double respTime : respTimes) {
+            sumRespTime += respTime;
+        }
+        return sumRespTime;
+    }
+
+    private double avg(List<Double> respTimes) {
+        return sum(respTimes) / respTimes.size();
+    }
+
+    private double max(List<Double> respTimes) {
+        double maxRespTime = Double.MIN_VALUE;
+
+        for (double respTime : respTimes) {
+            if (maxRespTime < respTime) {
+                maxRespTime = respTime;
+            }
+        }
+        return maxRespTime;
     }
 }
 
