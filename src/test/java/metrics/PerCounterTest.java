@@ -1,23 +1,21 @@
 package metrics;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class PerCounterTest {
     public static void main(String[] args) {
-        MetricsStorage storage = new RedisMetricsStorage();
-        Aggregator aggregator = new Aggregator();
-
-        ConsoleViewer consoleViewer = new ConsoleViewer();
-        ConsoleReporter consoleReporter = new ConsoleReporter(storage, aggregator, consoleViewer);
+        ConsoleReporter consoleReporter = new ConsoleReporter();
         consoleReporter.startReportedReport(60, 60);
 
-        EmailViewer emailViewer = new EmailViewer();
+        List<String> emailToAdresses = new ArrayList<>();
+        emailToAdresses.add("xxx@xxx.com");
 
-        emailViewer.addToAddress("xxxx@xxx.com");
-
-        EmailReporter emailReporter = new EmailReporter(storage, aggregator, emailViewer);
+        EmailReporter emailReporter = new EmailReporter(emailToAdresses);
 
         emailReporter.statDailyReport();
 
-        MetricsCollector collector = new MetricsCollector(storage);
+        MetricsCollector collector = new MetricsCollector();
         collector.recordRequest(new RequestInfo("register", 123, 10234));
         collector.recordRequest(new RequestInfo("register", 223, 11234));
         collector.recordRequest(new RequestInfo("register", 323, 12334));
