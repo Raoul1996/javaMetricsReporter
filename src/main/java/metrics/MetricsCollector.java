@@ -19,8 +19,7 @@ public class MetricsCollector {
     public MetricsCollector(MetricsStorage metricsStorage, int threadNumToSaveData) {
         this.metricsStorage = metricsStorage;
         this.eventBus = new AsyncEventBus(Executors.newFixedThreadPool(threadNumToSaveData));
-        this.eventBus.register(new EventListener() {
-        });
+        this.eventBus.register(new EventListener());
     }
 
     public void recordRequest(RequestInfo requestInfo) {

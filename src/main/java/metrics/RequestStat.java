@@ -1,6 +1,6 @@
 package metrics;
 
-public class RequestStat{
+public class RequestStat {
     private double maxResponseTime;
     private double minResponseTime;
     private double avgResponseTime;
@@ -13,8 +13,16 @@ public class RequestStat{
         this.maxResponseTime = maxRespTime;
     }
 
+    public double getMaxResponseTime() {
+        return maxResponseTime;
+    }
+
     public void setMinResponseTime(double minRespTime) {
         this.minResponseTime = minRespTime;
+    }
+
+    public double getMinResponseTime() {
+        return minResponseTime;
     }
 
     public void setAvgResponseTime(double avgRespTime) {
@@ -34,6 +42,26 @@ public class RequestStat{
     }
 
     public void setTps(long tps) {
-        this.tps =tps;
+        this.tps = tps;
+    }
+
+    public long getTps() {
+        return tps;
+    }
+
+    public long getCount() {
+        return count;
+    }
+
+    public double getP99ResponseTime() {
+        return p99ResponseTime;
+    }
+
+    public double getP999ResponseTime() {
+        return p999ResponseTime;
+    }
+
+    public double getAvgResponseTime() {
+        return avgResponseTime;
     }
 }
